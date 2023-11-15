@@ -220,7 +220,9 @@ void CCubeView::DrawObject(CDC* pDC)
 void CCubeView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	
+
+	m_st_pos = point;//记录鼠标起始位置
+
 	CView::OnLButtonUp(nFlags, point);
 
 }

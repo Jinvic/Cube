@@ -53,6 +53,7 @@ public:
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 private:
 	Cube cub;//立方体
+	CPoint m_st_pos;//鼠标起始位置
 };
 
 #ifndef _DEBUG  // CubeView.cpp 中的调试版本
