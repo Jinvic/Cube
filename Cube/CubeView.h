@@ -52,7 +52,7 @@ public:
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 private:
-	Cube cub;
+	Cube cub;//立方体
 };
 
 #ifndef _DEBUG  // CubeView.cpp 中的调试版本
