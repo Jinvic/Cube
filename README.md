@@ -7,8 +7,8 @@
 
 ### 关于计算机图形学
 
-**计算机图形学———基于MFC三维图形开发 孔令德著（第一版）**
-ISBN:9787302308751 [链接](https://u.xueshu86.com/13429290.html)
+**计算机图形学———基于MFC三维图形开发 孔令德著（第一版）** [链接](https://u.xueshu86.com/13429290.html)
+
 本来教材是第二版，没找到电子书就用第一版凑合下。
 
 - **基础MFC绘图方法** 见第二章 MFC绘图基础。
@@ -33,12 +33,15 @@ MFC功能主要在CCubeView类中实现。
 
 ```C++
 public:
- void DrawObject(CDC* pDC);// 绘图函数（测试）
+ void DrawCube(void);// 绘图函数,绘制立方体当前状态
  afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
  afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
  afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 private:
  Cube cub;//立方体
+ CPoint m_st_pos;//按下鼠标的起始位置
+ Matrix CP_st;//按下鼠标时的初始状态，用于实时更新鼠标移动后进行还原
+ bool lm_clicked;//左键是否按下
 ```
 
 具体实现请在`CubeView.cpp`中查看。
@@ -49,9 +52,9 @@ private:
 - [x] 以立方体中心为原点建立三维坐标系
 - [x] 实现投影映射
 - [ ] 实现消隐算法
-- [ ] 实现鼠标事件映射
-- [ ] 实现鼠标坐标变换到立方体旋转角度的转换
-- [ ] 实现立方体旋转功能
+- [x] 实现鼠标事件映射
+- [x] 实现鼠标坐标变换到立方体旋转角度的转换
+- [x] 实现立方体旋转功能
 - [ ] 由8点6面的立方体细化为216点54面的魔方
 - [ ] 鼠标落点检测，判断鼠标具体落在哪个面
 - [ ] 实现面到层的定位

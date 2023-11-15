@@ -40,7 +40,7 @@ END_MESSAGE_MAP()
 CCubeView::CCubeView() noexcept
 {
 	// TODO: 在此处添加构造代码
-
+	lm_clicked = false;
 }
 
 CCubeView::~CCubeView()
@@ -65,10 +65,7 @@ void CCubeView::OnDraw(CDC* pDC)
 		return;
 
 	// TODO: 在此处为本机数据添加绘制代码
-
-
-	DrawObject(pDC);
-
+	DrawCube();
 }
 
 
@@ -135,10 +132,11 @@ CCubeDoc* CCubeView::GetDocument() const // 非调试版本是内联的
 // CCubeView 消息处理程序
 
 
-// 绘图函数（测试）
-void CCubeView::DrawObject(CDC* pDC)
+// 绘图函数,绘制立方体当前状态
+void CCubeView::DrawCube(void)
 {
 	// TODO: 在此处添加实现代码.
+	CDC* pDC = GetDC();
 	CRect rect;
 	GetClientRect(&rect);
 	pDC->FillSolidRect(rect, RGB(0, 0, 0));//涂黑背景
@@ -222,15 +220,21 @@ void CCubeView::OnLButtonDown(UINT nFlags, CPoint point)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 
 	m_st_pos = point;//记录鼠标起始位置
-
+	lm_clicked = true;
+	CP_st = cub.P;
 	CView::OnLButtonUp(nFlags, point);
-
 }
 
 void CCubeView::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-
+	lm_clicked = false;
+	//获得移动距离
+	int dx = point.x - m_st_pos.x;
+	int dy = point.y - m_st_pos.y;
+	//根据移动距离计算旋转角度并旋转
+	cub.rotate(dx, dy);
+	DrawCube();
 	CView::OnLButtonUp(nFlags, point);
 }
 
@@ -238,6 +242,18 @@ void CCubeView::OnLButtonUp(UINT nFlags, CPoint point)
 void CCubeView::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-
+	if (lm_clicked == true)
+	{
+		//获得移动距离
+		int dx = point.x - m_st_pos.x;
+		int dy = point.y - m_st_pos.y;
+		//根据移动距离计算旋转角度并旋转
+		cub.rotate(dx, dy);
+		DrawCube();
+		cub.P = CP_st;
+		//因为每次都是根据初始状态计算旋转角度来实时更新状态
+		//所以每次完成后需要还原到初始状态便于下次计算
+		//等松开左键才真正确定旋转角度
+	}
 	CView::OnMouseMove(nFlags, point);
 }

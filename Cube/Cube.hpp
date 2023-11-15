@@ -97,12 +97,17 @@ struct Cube
 	}
 
 	//通过鼠标移动进行旋转
-	Matrix rotate(int dx, int dy, int limit = 500)//limit为最大移动距离
+	void rotate(int dx, int dy, int limit = 500)//limit为最大移动距离
 	{
-		double Theta_v=0, Phi_v=0; // 屏幕坐标系中绕y轴（水平移动）和x轴（上下移动）旋转的角度
-		// TODO:将鼠标移动距离转换为对应角度
+		double Theta_v = 0, Phi_v = 0; // 屏幕坐标系中绕y轴（水平移动）和x轴（上下移动）旋转的角度
+		// 将鼠标移动距离转换为对应角度
+		int vx = (dx >= 0) ? 1 : -1, vy = (dy >= 0) ? 1 : -1;//确定方向
+		dx = min(abs(dx), limit);
+		dy = min(abs(dy), limit);
+		Theta_v = vx * ((double)dx / 500) * acos(-1);//最大旋转角度Pi
+		Phi_v = vy * ((double)dy / 500) * acos(-1);
 
-		double Beta_x=0, Beta_y=0, Beta_z=0; // 世界坐标系绕绕坐标轴旋转的角度
+		double Beta_x = 0, Beta_y = 0, Beta_z = 0; // 世界坐标系绕绕坐标轴旋转的角度
 		// 将两个坐标系的坐标轴对齐
 		rotate_y(-acos(-1) / 4);
 		rotate_x(acos(-1) / 4);

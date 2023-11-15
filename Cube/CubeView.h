@@ -47,13 +47,15 @@ protected:
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	DECLARE_MESSAGE_MAP()
 public:
-	void DrawObject(CDC* pDC);// 绘图函数（测试）
+	void DrawCube(void);// 绘图函数,绘制立方体当前状态
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 private:
 	Cube cub;//立方体
-	CPoint m_st_pos;//鼠标起始位置
+	CPoint m_st_pos;//按下鼠标的起始位置
+	Matrix CP_st;//按下鼠标时的初始状态，用于实时更新鼠标移动后进行还原
+	bool lm_clicked;//左键是否按下
 };
 
 #ifndef _DEBUG  // CubeView.cpp 中的调试版本
