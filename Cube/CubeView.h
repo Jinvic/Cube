@@ -47,7 +47,8 @@ protected:
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	DECLARE_MESSAGE_MAP()
 public:
-	void DrawCube(void);// 绘图函数,绘制立方体当前状态
+	void DrawCube(CDC* pDC);// 绘图函数,绘制立方体当前状态
+	void DoubleBuffer(void);//双缓冲机制
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);

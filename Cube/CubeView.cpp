@@ -65,7 +65,7 @@ void CCubeView::OnDraw(CDC* pDC)
 		return;
 
 	// TODO: 在此处为本机数据添加绘制代码
-	DrawCube();
+	DoubleBuffer();
 }
 
 
@@ -133,10 +133,9 @@ CCubeDoc* CCubeView::GetDocument() const // 非调试版本是内联的
 
 
 // 绘图函数,绘制立方体当前状态
-void CCubeView::DrawCube(void)
+void CCubeView::DrawCube(CDC* pDC)
 {
 	// TODO: 在此处添加实现代码.
-	CDC* pDC = GetDC();
 	CRect rect;
 	GetClientRect(&rect);
 	pDC->FillSolidRect(rect, RGB(0, 0, 0));//涂黑背景
@@ -144,7 +143,6 @@ void CCubeView::DrawCube(void)
 	pDC->SetWindowExt(rect.Width(), rect.Height());//设置窗口
 	pDC->SetViewportExt(rect.Width(), -rect.Height());//x→y↑
 	pDC->SetViewportOrg(rect.Width() / 2, rect.Height() / 2);//中心为坐标原点
-
 
 	//创建并设置灰色画笔
 	CPen GreyPen, * pOldPen;
@@ -175,7 +173,7 @@ void CCubeView::DrawCube(void)
 		if (cub.F[i].visible == true)
 		{
 			pDC->BeginPath();
-			pDC->MoveTo(P[cub.F[i].P_idx[cub.F[i].P_idx.size()-1]]);
+			pDC->MoveTo(P[cub.F[i].P_idx[cub.F[i].P_idx.size() - 1]]);
 			for (int j = 0;j < cub.F[i].P_idx.size();j++)
 				pDC->LineTo(P[cub.F[i].P_idx[j]]);
 			pDC->EndPath();
@@ -212,7 +210,7 @@ void CCubeView::OnLButtonUp(UINT nFlags, CPoint point)
 	int dy = point.y - m_st_pos.y;
 	//根据移动距离计算旋转角度并旋转
 	cub.rotate(dx, dy);
-	DrawCube();
+	DoubleBuffer();
 	CView::OnLButtonUp(nFlags, point);
 }
 
@@ -227,11 +225,44 @@ void CCubeView::OnMouseMove(UINT nFlags, CPoint point)
 		int dy = point.y - m_st_pos.y;
 		//根据移动距离计算旋转角度并旋转
 		cub.rotate(dx, dy);
-		DrawCube();
+		DoubleBuffer();
 		cub.P = CP_st;
 		//因为每次都是根据初始状态计算旋转角度来实时更新状态
 		//所以每次完成后需要还原到初始状态便于下次计算
 		//等松开左键才真正确定旋转角度
 	}
 	CView::OnMouseMove(nFlags, point);
+}
+
+
+void CCubeView::DoubleBuffer(void)
+{
+	// TODO: 在此处添加实现代码.
+	CDC* pDC = GetDC();
+	CRect rect;
+	GetClientRect(&rect);
+	pDC->SetMapMode(MM_ANISOTROPIC);//设置映射模式
+	pDC->SetWindowExt(rect.Width(), rect.Height());//设置窗口
+	pDC->SetViewportExt(rect.Width(), -rect.Height());//x→y↑
+	pDC->SetViewportOrg(rect.Width() / 2, rect.Height() / 2);//中心为坐标原点
+
+	//创建与指定设备兼容的设备上下文（DC）和位图（Bitmap）
+	CDC memDC;
+	CBitmap NewBitmap, * pOldBitmap;
+	memDC.CreateCompatibleDC(pDC);
+	NewBitmap.CreateCompatibleBitmap(pDC, rect.Width(), rect.Height());
+	pOldBitmap = memDC.SelectObject(&NewBitmap);
+	//在新建的位图上绘图
+	DrawCube(&memDC);
+	//将内存设备上下文的位图传输到显示设备上下文中
+	pDC->BitBlt(
+		-rect.Width() / 2, -rect.Height() / 2,
+		rect.Width(), rect.Height(),
+		&memDC,
+		-rect.Width() / 2, -rect.Height() / 2,
+		SRCCOPY);
+	//结束
+	memDC.SelectObject(pOldBitmap);
+	memDC.DeleteDC();
+	NewBitmap.DeleteObject();
 }
