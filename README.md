@@ -20,6 +20,10 @@
 - **消息映射机制** [链接](https://blog.csdn.net/qq_44974888/article/details/124355801)
 - **鼠标响应** [链接](https://blog.csdn.net/Eastmount/article/details/53192634)
 
+### 关于计算几何
+
+- 向量的**数量积**、**向量积**、**夹角**求取
+
 ### API（MSDN）
 
 - **CFrameWndEx类** [链接](https://learn.microsoft.com/zh-cn/cpp/mfc/reference/cframewndex-class?view=msvc-170) 关于`CFrameWndEx::OnLButtonDown`、`CFrameWndEx::OnLButtonUp`、`CFrameWndEx::OnMouseMove`等方法。
@@ -40,7 +44,7 @@ public:
 private:
  Cube cub;//立方体
  CPoint m_st_pos;//按下鼠标的起始位置
- Matrix CP_st;//按下鼠标时的初始状态，用于实时更新鼠标移动后进行还原
+ Matrix CP_st;//按下鼠标时的初始状态，用于鼠标移动时实时更新后还原
  bool lm_clicked;//左键是否按下
 ```
 
@@ -51,7 +55,7 @@ private:
 
 - [x] 以立方体中心为原点建立三维坐标系
 - [x] 实现投影映射
-- [ ] 实现消隐算法
+- [x] 实现消隐算法
 - [x] 实现鼠标事件映射
 - [x] 实现鼠标坐标变换到立方体旋转角度的转换
 - [x] 实现立方体旋转功能
@@ -60,3 +64,4 @@ private:
 - [ ] 实现面到层的定位
 - [ ] 实现鼠标坐标变换到层选择以及旋转角度的转换
 - [ ] 实现层旋转功能
+- [ ] 添加双缓冲机制

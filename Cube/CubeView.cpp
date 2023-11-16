@@ -151,68 +151,46 @@ void CCubeView::DrawCube(void)
 	GreyPen.CreatePen(PS_SOLID, 5, RGB(127, 127, 127));
 	pOldPen = pDC->SelectObject(&GreyPen);
 	//创建六色画刷
-	CBrush RedBrush, OrangeBrush, YellowBrush, WhiteBrush, BlueBrush, GreenBrush, * pOldBrush;
-	RedBrush.CreateSolidBrush(RGB(255, 0, 0));
-	OrangeBrush.CreateSolidBrush(RGB(255, 128, 0));
-	YellowBrush.CreateSolidBrush(RGB(255, 255, 0));
-	WhiteBrush.CreateSolidBrush(RGB(255, 255, 255));
-	BlueBrush.CreateSolidBrush(RGB(0, 0, 255));
-	GreenBrush.CreateSolidBrush(RGB(0, 255, 0));
-	pOldBrush = pDC->SelectObject(&RedBrush);
+	//CBrush RedBrush, OrangeBrush, YellowBrush, WhiteBrush, BlueBrush, GreenBrush, * pOldBrush;
+	CBrush Brush[6], * pOldBrush;
+	Brush[Cube::Color::blue].CreateSolidBrush(RGB(0, 0, 255));//蓝
+	Brush[Cube::Color::red].CreateSolidBrush(RGB(255, 0, 0));//红
+	Brush[Cube::Color::yellow].CreateSolidBrush(RGB(255, 255, 0));//黄
+	Brush[Cube::Color::white].CreateSolidBrush(RGB(255, 255, 255));//白
+	Brush[Cube::Color::orange].CreateSolidBrush(RGB(255, 128, 0));//橙
+	Brush[Cube::Color::green].CreateSolidBrush(RGB(0, 255, 0));//绿
+	pOldBrush = pDC->SelectObject(&Brush[0]);
 
-	//Cube cub;
-	//cub.P = cub.P * cub.T_ws;
+	//将三维坐标系的点坐标转换为透视投影后的屏幕坐标
 	Matrix CP = cub.P * cub.T_ws;
 	CPoint P[8];
 	for (int i = 0;i < 8;i++)
-	{
 		P[i] = Cube::trans_point(CP[i]);
-		//printf("%d %d\n", P[i].x, P[i].y);
+	//消隐算法，判断各面的可见性
+	cub.HiddenSurfaceRemovalAlgorithm();
+
+	//根据可见性绘制各面
+	for (int i = 0;i < cub.F.size();i++)
+	{
+		if (cub.F[i].visible == true)
+		{
+			pDC->BeginPath();
+			pDC->MoveTo(P[cub.F[i].P_idx[cub.F[i].P_idx.size()-1]]);
+			for (int j = 0;j < cub.F[i].P_idx.size();j++)
+				pDC->LineTo(P[cub.F[i].P_idx[j]]);
+			pDC->EndPath();
+			pDC->SelectObject(&Brush[i]);
+			pDC->StrokeAndFillPath();
+		}
 	}
-
-
-	//绘制蓝色面
-	pDC->BeginPath();
-	pDC->MoveTo(P[0]);
-	pDC->LineTo(P[1]);
-	pDC->LineTo(P[2]);
-	pDC->LineTo(P[3]);
-	pDC->LineTo(P[0]);
-	pDC->EndPath();
-	pDC->SelectObject(&BlueBrush);
-	pDC->StrokeAndFillPath();
-	//绘制红色面
-	pDC->BeginPath();
-	pDC->MoveTo(P[0]);
-	pDC->LineTo(P[4]);
-	pDC->LineTo(P[7]);
-	pDC->LineTo(P[3]);
-	pDC->LineTo(P[0]);
-	pDC->EndPath();
-	pDC->SelectObject(&RedBrush);
-	pDC->StrokeAndFillPath();
-	//绘制黄色面
-	pDC->BeginPath();
-	pDC->MoveTo(P[0]);
-	pDC->LineTo(P[4]);
-	pDC->LineTo(P[5]);
-	pDC->LineTo(P[1]);
-	pDC->LineTo(P[0]);
-	pDC->EndPath();
-	pDC->SelectObject(&YellowBrush);
-	pDC->StrokeAndFillPath();
 
 
 	//结束
 	pDC->SelectObject(pOldPen);
 	pDC->SelectObject(pOldBrush);
 	GreyPen.DeleteObject();
-	RedBrush.DeleteObject();
-	OrangeBrush.DeleteObject();
-	YellowBrush.DeleteObject();
-	WhiteBrush.DeleteObject();
-	BlueBrush.DeleteObject();
-	GreenBrush.DeleteObject();
+	for (int i = 0;i < 6;i++)
+		Brush[i].DeleteObject();
 }
 
 void CCubeView::OnLButtonDown(UINT nFlags, CPoint point)
