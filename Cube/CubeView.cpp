@@ -149,7 +149,6 @@ void CCubeView::DrawCube(CDC* pDC)
 	GreyPen.CreatePen(PS_SOLID, 5, RGB(127, 127, 127));
 	pOldPen = pDC->SelectObject(&GreyPen);
 	//创建六色画刷
-	//CBrush RedBrush, OrangeBrush, YellowBrush, WhiteBrush, BlueBrush, GreenBrush, * pOldBrush;
 	CBrush Brush[6], * pOldBrush;
 	Brush[Cube::Color::blue].CreateSolidBrush(RGB(0, 0, 255));//蓝
 	Brush[Cube::Color::red].CreateSolidBrush(RGB(255, 0, 0));//红
@@ -161,27 +160,26 @@ void CCubeView::DrawCube(CDC* pDC)
 
 	//将三维坐标系的点坐标转换为透视投影后的屏幕坐标
 	Matrix CP = cub.P * cub.T_ws;
-	CPoint P[8];
-	for (int i = 0;i < 8;i++)
+	std::vector<CPoint>P(cub.P.size());
+	for (int i = 0;i < P.size();i++)
 		P[i] = Cube::trans_point(CP[i]);
 	//消隐算法，判断各面的可见性
 	cub.HiddenSurfaceRemovalAlgorithm();
 
 	//根据可见性绘制各面
-	for (int i = 0;i < cub.F.size();i++)
+	for (int i = 0;i < cub.Fs.size();i++)
 	{
-		if (cub.F[i].visible == true)
+		if (cub.Fs[i].visible == true)
 		{
 			pDC->BeginPath();
-			pDC->MoveTo(P[cub.F[i].P_idx[cub.F[i].P_idx.size() - 1]]);
-			for (int j = 0;j < cub.F[i].P_idx.size();j++)
-				pDC->LineTo(P[cub.F[i].P_idx[j]]);
+			pDC->MoveTo(P[cub.Fs[i].P_idx[3]]);
+			for (int j = 0;j < cub.Fs[i].P_idx.size();j++)
+				pDC->LineTo(P[cub.Fs[i].P_idx[j]]);
 			pDC->EndPath();
-			pDC->SelectObject(&Brush[i]);
+			pDC->SelectObject(&Brush[i/9]);
 			pDC->StrokeAndFillPath();
 		}
 	}
-
 
 	//结束
 	pDC->SelectObject(pOldPen);

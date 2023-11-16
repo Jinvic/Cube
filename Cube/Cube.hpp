@@ -34,10 +34,11 @@ public:
 
 	struct Face // 面
 	{
-		std::array<int, 4> P_idx; // 四个顶点的索引
+		std::array<int, 4> P_idx; // 四个顶点的索引，按逆时针顺序存点
 		bool visible = false;     // 可见性
 	};
 	std::array<Face, 6> F;//六色面，依次为蓝红黄白橙绿
+	std::vector<Face> Fs;//36面，每9面为一色
 
 	static enum Color { blue, red, yellow, white, orange, green };//颜色表
 
@@ -84,9 +85,130 @@ public:
 		F[white].P_idx = { 6, 7, 3, 2 };//白
 		F[orange].P_idx = { 6, 2, 1, 5 };//橙
 		F[green].P_idx = { 6, 5, 4, 7 };//绿
+
+		//8点6面的立方体细化为216点54面的魔方
+		trans_cube();
 	}
 
 private:
+	//8点6面的立方体细化为216点54面的魔方
+#define Point std::array<double, 4>
+	//四则运算
+	Point plus(Point p1, Point p2)
+	{
+		for (int i = 0;i < 3;i++)
+			p1[i] += p2[i];
+		return p1;
+	}
+	Point minus(Point p1, Point p2)
+	{
+		for (int i = 0;i < 3;i++)
+			p1[i] -= p2[i];
+		return p1;
+	}
+	Point divide(Point p, double d)
+	{
+		for (int i = 0;i < 3;i++)
+			p[i] /= d;
+		return p;
+	}
+
+	void trans_cube(void)
+	{
+		//4点1面细化为36点9面
+		for (int i = 0;i < F.size();i++)
+		{
+			std::pair<Point, Point>p_mid[6];
+			for (int j = 0;j < 4;j++)
+				p_mid[j] = middle2(P[F[i].P_idx[j]], P[F[i].P_idx[(j + 1) % 4]]);
+			p_mid[4] = middle2(p_mid[0].first, p_mid[2].second);
+			p_mid[5] = middle2(p_mid[0].second, p_mid[2].first);
+
+			Face f;
+			int d;
+			{
+				d = P.size();
+				f.P_idx = { F[i].P_idx[0],d,d + 1,d + 2 };
+				P.push_back(p_mid[0].first);
+				P.push_back(p_mid[4].first);
+				P.push_back(p_mid[3].second);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,d + 1,d + 2,d + 3 };
+				P.push_back(p_mid[0].first);
+				P.push_back(p_mid[0].second);
+				P.push_back(p_mid[5].first);
+				P.push_back(p_mid[4].first);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,F[i].P_idx[1],d + 1,d + 2 };
+				P.push_back(p_mid[0].second);
+				P.push_back(p_mid[1].first);
+				P.push_back(p_mid[5].first);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,d + 1,d + 2,d + 3 };
+				P.push_back(p_mid[5].first);
+				P.push_back(p_mid[1].first);
+				P.push_back(p_mid[1].second);
+				P.push_back(p_mid[5].second);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,d + 1,F[i].P_idx[2],d + 2 };
+				P.push_back(p_mid[5].second);
+				P.push_back(p_mid[1].second);
+				P.push_back(p_mid[2].first);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,d + 1,d + 2,d + 3 };
+				P.push_back(p_mid[4].second);
+				P.push_back(p_mid[5].second);
+				P.push_back(p_mid[2].first);
+				P.push_back(p_mid[2].second);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,d + 1,d + 2,F[i].P_idx[3] };
+				P.push_back(p_mid[3].first);
+				P.push_back(p_mid[4].second);
+				P.push_back(p_mid[2].second);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,d + 1,d + 2,d + 3 };
+				P.push_back(p_mid[3].second);
+				P.push_back(p_mid[4].first);
+				P.push_back(p_mid[4].second);
+				P.push_back(p_mid[3].first);
+				Fs.push_back(f);
+
+				d = P.size();
+				f.P_idx = { d,d + 1,d + 2,d + 3 };
+				P.push_back(p_mid[4].first);
+				P.push_back(p_mid[5].first);
+				P.push_back(p_mid[5].second);
+				P.push_back(p_mid[4].second);
+				Fs.push_back(f);
+			}
+		}
+	}
+	//找线段的两个中点
+	std::pair<Point, Point> middle2(Point p_st, Point p_end)
+	{
+		Point p = divide(minus(p_end, p_st), 3);
+		Point p1 = plus(p_st, p);
+		Point p2 = plus(p1, p);
+		return make_pair(p1, p2);
+	};
+
+#undef Point
+
+
 	// 绕x轴旋转
 	void rotate_x(double Beta) // Beta为旋转角度
 	{
@@ -208,8 +330,9 @@ public:
 #ifdef debug
 		AllocConsole();
 #endif
-		double a[6] = { 0 };//夹角和Pi的比值
+		std::vector<double> a(Fs.size());//夹角和Pi的比值
 		Vector vv = { 1, 1, 1 }; // 视向量
+		//9个大面的可见性
 		for (int i = 0; i < F.size(); i++)
 		{
 			// 计算面的外法向量
@@ -226,6 +349,24 @@ public:
 			else
 				F[i].visible = false;
 		}
+		//54个小面的可见性
+		for (int i = 0; i < Fs.size(); i++)
+		{
+			// 计算面的外法向量
+			Vector v1 = Vector(P[Fs[i].P_idx[0]], P[Fs[i].P_idx[1]]),
+				v2 = Vector(P[Fs[i].P_idx[1]], P[Fs[i].P_idx[2]]);
+			Vector vf = Vector::cross(v1, v2);
+
+			// 计算外法向与视向量的夹角
+			double Theta = Vector::angel(vf, vv);
+			a[i] = Theta / acos(-1);
+			// 判断可见性
+			if (a[i] >= 0 && a[i] <= 0.5)//夹角小于90度，可见
+				Fs[i].visible = true;
+			else
+				Fs[i].visible = false;
+		}
+
 #ifdef debug
 		system("cls");
 		std::cout.setf(std::ios::fixed);
