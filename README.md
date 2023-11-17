@@ -6,6 +6,8 @@
 
 [项目地址](https://github.com/Jinvic/Cube)
 
+分支cube为仅立方体功能的存档。
+
 ## 参考
 
 ### 关于计算机图形学
