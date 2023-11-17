@@ -2,7 +2,7 @@
 
 const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace };
 #define debug mouse_LBdown_onWhichFace
-#undef debug
+//#undef debug
 #ifdef debug
 #pragma comment(linker, "/subsystem:console /entry:wWinMainCRTStartup") 
 #endif // debug
@@ -45,12 +45,13 @@ public:
 	static const enum Color { blue, red, yellow, white, orange, green };//颜色表
 	const std::string Color_rev[6] = { "blue", "red", "yellow", "white", "orange", "green" };//DEBUG用
 
-	static const int OutFace = 55;//判断鼠标落点用，该常量表示未落在面上
+	static const int OutFace = -1;//判断鼠标落点用，该常量表示未落在面上
 
 	struct Layer
 	{
-		Matrix P[8];
-	};
+		std::array<int, 8> P_idx;// 四个顶点的索引，存点顺序与立方体相同
+		Vector3d v;//法向量
+	}L[9];
 
 	Cube(double D = 300, double a = 3, double b = 5) // D正方体边长，ab为比例尺
 	{
@@ -70,7 +71,7 @@ public:
 		double R = Point::dist(O_w, O_v);         // R为O_w间O_v距离
 		double d = Point::dist(O_s, O_v);         // d为O_s间O_v距离
 		const double PI = acos(-1);
-		const double Theta = PI / 4, Phi = acos(1 / sqrt(3)); // θ为O_wO_v与z_w轴夹角,φ为与y_w轴夹角
+		const double Theta = PI / 4, Phi = acos(1 / sqrt(3)); // θ为O_wO_v在xOz平面上的投影与z轴夹角,φ为与y轴夹角
 
 		// 初始化透视投影变换矩阵
 		T_ws.push_back({ cos(Theta), -cos(Phi) * sin(Theta), 0, -sin(Phi) * sin(Theta) / d });
@@ -96,17 +97,30 @@ public:
 		F[orange].P_idx = { 6, 2, 1, 5 };//橙
 		F[green].P_idx = { 6, 5, 4, 7 };//绿
 
-		//8点6面的立方体细化为216点54面的魔方
+		//8点6面的立方体细化为156点54面的魔方
 		trans_cube();
+
+		//初始化各层顶点
+		//L[0].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[40].P_idx[3],F[38].P_idx[0],F[11].P_idx[2] };//蓝
+		//L[1].P_idx = { 0, 3, 7, 4,F[0].P_idx[1],F[51].P_idx[0],F[49].P_idx[1],F[47].P_idx[0] };//红
+		//L[2].P_idx = { 0, 4, 5, 1,F[0].P_idx[3],F[49].P_idx[3],F[47].P_idx[0],F[2].P_idx[2] };//黄
+		//L[3].P_idx = { 6, 7, 3, 2,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//白
+		//L[4].P_idx = { 6, 2, 1, 5,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//橙
+		//L[5].P_idx = { 6, 5, 4, 7,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//绿
+		//L[6].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//x轴为法向量
+		//L[7].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//y轴为法向量
+		//L[8].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//z轴为法向量
 
 		//DEBUG:
 #ifdef debug
 		AllocConsole();
+		std::cout << "P.size():\t" << P.size() << std::endl;
+		std::cout << "Fs.size()\t" << Fs.size() << std::endl;
 #endif
 	}
 
 private:
-	//8点6面的立方体细化为216点54面的魔方
+	//8点6面的立方体细化为156点54面的魔方
 #define Point std::array<double, 4>
 	//四则运算
 	Point plus(Point p1, Point p2)
@@ -127,6 +141,26 @@ private:
 			p[i] /= d;
 		return p;
 	}
+	//该点是否已存
+	int search_point(Point p)
+	{
+		for (int i = 0;i < P.size();i++)
+			if (P[i] == p)
+				return i;
+		return -1;
+	}
+	//向f.P_idx[id]存点索引
+	void check_point(Point p, Face& f, int id)
+	{
+		int d = search_point(p);
+		if (d == -1)
+		{
+			f.P_idx[id] = P.size();
+			P.push_back(p);
+		}
+		else
+			f.P_idx[id] = d;
+	}
 
 	void trans_cube(void)
 	{
@@ -140,74 +174,59 @@ private:
 			p_mid[5] = middle2(p_mid[0].second, p_mid[2].first);
 
 			Face f;
-			int d;
 			{
-				d = P.size();
-				f.P_idx = { F[i].P_idx[0],d,d + 1,d + 2 };
-				P.push_back(p_mid[0].first);
-				P.push_back(p_mid[4].first);
-				P.push_back(p_mid[3].second);
+				f.P_idx[0] = F[i].P_idx[0];
+				check_point(p_mid[0].first, f, 1);
+				check_point(p_mid[4].first, f, 2);
+				check_point(p_mid[3].second, f, 3);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,d + 1,d + 2,d + 3 };
-				P.push_back(p_mid[0].first);
-				P.push_back(p_mid[0].second);
-				P.push_back(p_mid[5].first);
-				P.push_back(p_mid[4].first);
+				check_point(p_mid[0].first, f, 0);
+				check_point(p_mid[0].second, f, 1);
+				check_point(p_mid[5].first, f, 2);
+				check_point(p_mid[4].first, f, 3);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,F[i].P_idx[1],d + 1,d + 2 };
-				P.push_back(p_mid[0].second);
-				P.push_back(p_mid[1].first);
-				P.push_back(p_mid[5].first);
+				f.P_idx[1] = F[i].P_idx[1];
+				check_point(p_mid[0].second, f, 0);
+				check_point(p_mid[1].first, f, 2);
+				check_point(p_mid[5].first, f, 3);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,d + 1,d + 2,d + 3 };
-				P.push_back(p_mid[5].first);
-				P.push_back(p_mid[1].first);
-				P.push_back(p_mid[1].second);
-				P.push_back(p_mid[5].second);
+				check_point(p_mid[5].first, f, 0);
+				check_point(p_mid[1].first, f, 1);
+				check_point(p_mid[1].second, f, 2);
+				check_point(p_mid[5].second, f, 3);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,d + 1,F[i].P_idx[2],d + 2 };
-				P.push_back(p_mid[5].second);
-				P.push_back(p_mid[1].second);
-				P.push_back(p_mid[2].first);
+				f.P_idx[2] = F[i].P_idx[2];
+				check_point(p_mid[5].second, f, 0);
+				check_point(p_mid[1].second, f, 1);
+				check_point(p_mid[2].first, f, 3);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,d + 1,d + 2,d + 3 };
-				P.push_back(p_mid[4].second);
-				P.push_back(p_mid[5].second);
-				P.push_back(p_mid[2].first);
-				P.push_back(p_mid[2].second);
+				check_point(p_mid[4].second, f, 0);
+				check_point(p_mid[5].second, f, 1);
+				check_point(p_mid[2].first, f, 2);
+				check_point(p_mid[2].second, f, 3);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,d + 1,d + 2,F[i].P_idx[3] };
-				P.push_back(p_mid[3].first);
-				P.push_back(p_mid[4].second);
-				P.push_back(p_mid[2].second);
+				f.P_idx[3] = F[i].P_idx[3];
+				check_point(p_mid[3].first, f, 0);
+				check_point(p_mid[4].second, f, 1);
+				check_point(p_mid[2].second, f, 2);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,d + 1,d + 2,d + 3 };
-				P.push_back(p_mid[3].second);
-				P.push_back(p_mid[4].first);
-				P.push_back(p_mid[4].second);
-				P.push_back(p_mid[3].first);
+				check_point(p_mid[3].second, f, 0);
+				check_point(p_mid[4].first, f, 1);
+				check_point(p_mid[4].second, f, 2);
+				check_point(p_mid[3].first, f, 3);
 				Fs.push_back(f);
 
-				d = P.size();
-				f.P_idx = { d,d + 1,d + 2,d + 3 };
-				P.push_back(p_mid[4].first);
-				P.push_back(p_mid[5].first);
-				P.push_back(p_mid[5].second);
-				P.push_back(p_mid[4].second);
+				check_point(p_mid[4].first, f, 0);
+				check_point(p_mid[5].first, f, 1);
+				check_point(p_mid[5].second, f, 2);
+				check_point(p_mid[4].second, f, 3);
 				Fs.push_back(f);
 			}
 		}
@@ -317,7 +336,7 @@ public:
 			std::cout.setf(std::ios::fixed);
 			for (int i = 0;i < 6;i++)
 				std::cout << Color_rev[i] << "\t\t" << a[i] << std::endl;
-		}
+	}
 #endif
 
 		//54个小面的可见性
@@ -338,7 +357,7 @@ public:
 				Fs[i].visible = false;
 		}
 #undef Vector
-	}
+}
 
 	//判断鼠标落点
 private:
@@ -377,9 +396,9 @@ private:
 
 public:
 	//判断鼠标落在哪个面上
-	int onWhichFace(CPoint mp)//返回面的索引。若返回55则不在面上
+	int onWhichFace(CPoint mp)//返回面的索引。若返回-1则不在面上
 	{
-		int res = OutFace;//55
+		int res = OutFace;//-1
 		for (int i = 0;i < F.size();i++)//先判断大面
 		{
 			if (F[i].visible == true && onFace(mp, F[i]))
@@ -407,4 +426,4 @@ public:
 	{
 		return { (int)round(arr[0]),(int)round(arr[1]) };
 	}
-};
+	};
