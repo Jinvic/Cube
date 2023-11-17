@@ -57,6 +57,7 @@ private:
 	CPoint m_st_pos;//按下鼠标的起始位置
 	Matrix CP_st;//按下鼠标时的初始状态，用于实时更新鼠标移动后进行还原
 	bool lm_clicked;//左键是否按下
+	int Fs_idx;//鼠标按下时落在哪个面上。若为Cube::OutFace，即55，则表示未落在面上
 };
 
 #ifndef _DEBUG  // CubeView.cpp 中的调试版本

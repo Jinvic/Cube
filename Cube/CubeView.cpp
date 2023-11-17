@@ -41,6 +41,7 @@ CCubeView::CCubeView() noexcept
 {
 	// TODO: 在此处添加构造代码
 	lm_clicked = false;
+	Fs_idx = Cube::OutFace;
 }
 
 CCubeView::~CCubeView()
@@ -176,7 +177,7 @@ void CCubeView::DrawCube(CDC* pDC)
 			for (int j = 0;j < cub.Fs[i].P_idx.size();j++)
 				pDC->LineTo(P[cub.Fs[i].P_idx[j]]);
 			pDC->EndPath();
-			pDC->SelectObject(&Brush[i/9]);
+			pDC->SelectObject(&Brush[i / 9]);
 			pDC->StrokeAndFillPath();
 		}
 	}
@@ -192,10 +193,15 @@ void CCubeView::DrawCube(CDC* pDC)
 void CCubeView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-
 	m_st_pos = point;//记录鼠标起始位置
 	lm_clicked = true;
 	CP_st = cub.P;
+	//此时得到的point原点为左上角，需要转化为以中点为原点的坐标
+	CRect rect;
+	GetClientRect(&rect);
+	point.x -= rect.Width() / 2;
+	point.y = rect.Height() / 2 - point.y;
+	Fs_idx = cub.onWhichFace(point);
 	CView::OnLButtonUp(nFlags, point);
 }
 

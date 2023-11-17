@@ -1,7 +1,8 @@
 #pragma once
 
-#define debug 1
-#undef debug
+const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace };
+#define debug mouse_LBdown_onWhichFace
+//#undef debug
 #ifdef debug
 #pragma comment(linker, "/subsystem:console /entry:wWinMainCRTStartup") 
 #endif // debug
@@ -40,7 +41,10 @@ public:
 	std::array<Face, 6> F;//六色面，依次为蓝红黄白橙绿
 	std::vector<Face> Fs;//36面，每9面为一色
 
-	static enum Color { blue, red, yellow, white, orange, green };//颜色表
+	static const enum Color { blue, red, yellow, white, orange, green };//颜色表
+	const std::string Color_rev[6] = { "blue", "red", "yellow", "white", "orange", "green" };//DEBUG用
+
+	static const int OutFace = 55;//判断鼠标落点用，该常量表示未落在面上
 
 	Cube(double D = 300, double a = 3, double b = 5) // D正方体边长，ab为比例尺
 	{
@@ -88,6 +92,11 @@ public:
 
 		//8点6面的立方体细化为216点54面的魔方
 		trans_cube();
+
+		//DEBUG:
+#ifdef debug
+		AllocConsole();
+#endif
 	}
 
 private:
@@ -273,6 +282,7 @@ public:
 	// 消隐算法
 	void HiddenSurfaceRemovalAlgorithm(void)
 	{
+		//3D向量
 		struct Vector
 		{
 			double x, y, z;
@@ -294,7 +304,7 @@ public:
 			}
 
 			// 向量乘法(向量积)
-			static Vector cross(Vector v1, Vector v2)
+			inline static Vector cross(Vector v1, Vector v2)
 			{
 				Vector v3;
 				v3.x = v1.y * v2.z - v2.y * v1.z;
@@ -304,7 +314,7 @@ public:
 			}
 
 			// 向量乘法(数量积)
-			static double dot(Vector v1, Vector v2)
+			inline static double dot(Vector v1, Vector v2)
 			{
 				return
 					v1.x * v2.x +
@@ -313,23 +323,19 @@ public:
 			}
 
 			// 向量模
-			static double length(Vector v)
+			inline static double length(Vector v)
 			{
 				double l2 = dot(v, v);
 				return (l2 < 0) ? 0 : sqrt(l2);
 			}
 
 			// 向量夹角 cosθ=a*b/(|a|*|b|)
-			static double angel(Vector v1, Vector v2)
+			inline static double angel(Vector v1, Vector v2)
 			{
 				return acos(dot(v1, v2) / length(v1) / length(v2));
 			}
 		};
 
-		//DEBUG:
-#ifdef debug
-		AllocConsole();
-#endif
 		std::vector<double> a(Fs.size());//夹角和Pi的比值
 		Vector vv = { 1, 1, 1 }; // 视向量
 		//9个大面的可见性
@@ -349,6 +355,18 @@ public:
 			else
 				F[i].visible = false;
 		}
+
+		//DEBUG:
+#ifdef debug
+		if (debug == real_time_visibility)
+		{
+			system("cls");
+			std::cout.setf(std::ios::fixed);
+			for (int i = 0;i < 6;i++)
+				std::cout << Color_rev[i] << "\t\t" << a[i] << std::endl;
+		}
+#endif
+
 		//54个小面的可见性
 		for (int i = 0; i < Fs.size(); i++)
 		{
@@ -366,14 +384,115 @@ public:
 			else
 				Fs[i].visible = false;
 		}
+	}
 
+	//判断鼠标落点
+private:
+	//判断点是否在指定面内
+	int onFace(CPoint p, Face f) /// 已验证
+	{
+		//2D向量
+		struct Vector
+		{
+			double x, y;
+
+			// 默认构造函数
+			Vector(double a = 0, double b = 0, double c = 0)
+			{
+				x = a;
+				y = b;
+			}
+
+			// p1指向p2的向量的构造函数
+			Vector(CPoint p1, CPoint p2)
+			{
+				x = p2.x - p1.x;
+				y = p2.y - p1.y;
+			}
+
+			// 向量乘法(向量积)
+			inline static double cross(Vector v1, Vector v2)
+			{
+				return  v1.x * v2.y - v2.x * v1.y;
+			}
+
+			// 向量乘法(数量积)
+			inline static double dot(Vector v1, Vector v2)
+			{
+				return v1.x * v2.x + v1.y * v2.y;
+			}
+
+			//和0比较 > = < 1 0 -1
+			inline static int dcmp(double x)
+			{
+				if (fabs(x) < 1e-8)
+					return 0;
+				else
+					return x < 0 ? -1 : 1;
+			}
+
+			//点在p线段上(包括端点)
+			inline static bool onSegment(CPoint p, CPoint a1, CPoint a2)
+			{ // pa1和pa2共线，且a1a2在p两端
+				return
+					dcmp(cross(Vector(p, a1), Vector(p, a2))) == 0 &&
+					dcmp(dot(Vector(p, a1), Vector(p, a2))) <= 0;
+			}
+		};
+
+		std::array<CPoint, 4> poly;
+		Matrix tmp(1);
+		for (int i = 0;i < poly.size();i++)//三维坐标系的点转换为二维坐标系的点
+		{
+			tmp[0] = P[f.P_idx[i]];
+			tmp = tmp * T_ws;
+			poly[i] = trans_point(tmp[0]);
+		}
+
+		//判断点是否在凸包内算法
+		int wn = 0;
+		for (int i = 0; i < poly.size(); i++)
+		{
+			if (Vector::onSegment(p, poly[i], poly[(i + 1) % poly.size()]))
+				return -1; //边界
+			int k = Vector::dcmp(Vector::cross(Vector(poly[i], poly[(i + 1) % poly.size()]), Vector(poly[i], p)));
+			int d1 = Vector::dcmp(poly[i].y - p.y);
+			int d2 = Vector::dcmp(poly[(i + 1) % poly.size()].y - p.y);
+			if (k > 0 && d1 <= 0 && d2 > 0)
+				wn++;
+			if (k < 0 && d2 <= 0 && d1 > 0)
+				wn--;
+		}
+		if (wn != 0)
+			return 1; //内部
+		return 0;     //外部
+	}
+
+public:
+	//判断鼠标落在哪个面上
+	int onWhichFace(CPoint mp)//返回面的索引。若返回55则不在面上
+	{
+		int res = OutFace;//55
+		for (int i = 0;i < F.size();i++)//先判断大面
+		{
+			if (F[i].visible == true && onFace(mp, F[i]))
+				for (int j = 0;j < 9;j++)//再判断大面内的小面
+					if (onFace(mp, Fs[i * 9 + j]))
+						res = i * 9 + j;
+		}
+
+		//DEBUG:
 #ifdef debug
-		system("cls");
-		std::cout.setf(std::ios::fixed);
-		std::cout << "blue\t\t" << a[0] << "\tred\t" << a[1] << std::endl <<
-			"yellow\t\t" << a[2] << "\twhite\t" << a[3] << std::endl <<
-			"orange\t\t" << a[4] << "\tgreen\t" << a[5] << std::endl;
+		if (debug == mouse_LBdown_onWhichFace)
+			system("cls");
+		std::cout << "mouse_pos:\t" << mp.x << '\t' << mp.y << std::endl;
+		if (res == OutFace)
+			std::cout << "Out of all face." << std::endl;
+		else
+			std::cout << "on face:Fs[" << res << "]\tcolor:" << Color_rev[res / 9] << std::endl;
 #endif
+
+		return res;
 	}
 
 	//将三维坐标系的点坐标转换为透视投影后的屏幕坐标
