@@ -185,6 +185,7 @@
   <ItemGroup>
     <ClInclude Include="ChildFrm.h" />
     <ClInclude Include="ClassView.h" />
+    <ClInclude Include="ComputationGeometry.hpp" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="Cube.hpp" />
     <ClInclude Include="CubeDoc.h" />

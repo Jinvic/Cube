@@ -2,7 +2,7 @@
 
 const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace };
 #define debug mouse_LBdown_onWhichFace
-//#undef debug
+#undef debug
 #ifdef debug
 #pragma comment(linker, "/subsystem:console /entry:wWinMainCRTStartup") 
 #endif // debug
@@ -10,6 +10,7 @@ const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace };
 #include <vector>
 #include <array>
 #include <iostream>
+#include "ComputationGeometry.hpp"
 
 typedef std::vector<std::array<double, 4>> Matrix;
 inline Matrix operator*(Matrix a, Matrix b) // 矩阵乘法
@@ -45,6 +46,11 @@ public:
 	const std::string Color_rev[6] = { "blue", "red", "yellow", "white", "orange", "green" };//DEBUG用
 
 	static const int OutFace = 55;//判断鼠标落点用，该常量表示未落在面上
+
+	struct Layer
+	{
+		Matrix P[8];
+	};
 
 	Cube(double D = 300, double a = 3, double b = 5) // D正方体边长，ab为比例尺
 	{
@@ -282,60 +288,7 @@ public:
 	// 消隐算法
 	void HiddenSurfaceRemovalAlgorithm(void)
 	{
-		//3D向量
-		struct Vector
-		{
-			double x, y, z;
-
-			// 默认构造函数
-			Vector(double a = 0, double b = 0, double c = 0)
-			{
-				x = a;
-				y = b;
-				z = c;
-			}
-
-			// p1指向p2的向量的构造函数
-			Vector(std::array<double, 4> p1, std::array<double, 4> p2)
-			{
-				x = p2[0] - p1[0];
-				y = p2[1] - p1[1];
-				z = p2[2] - p1[2];
-			}
-
-			// 向量乘法(向量积)
-			inline static Vector cross(Vector v1, Vector v2)
-			{
-				Vector v3;
-				v3.x = v1.y * v2.z - v2.y * v1.z;
-				v3.y = v1.z * v2.x - v2.z * v1.x;
-				v3.z = v1.x * v2.y - v2.x * v1.y;
-				return v3;
-			}
-
-			// 向量乘法(数量积)
-			inline static double dot(Vector v1, Vector v2)
-			{
-				return
-					v1.x * v2.x +
-					v1.y * v2.y +
-					v1.z * v2.z;
-			}
-
-			// 向量模
-			inline static double length(Vector v)
-			{
-				double l2 = dot(v, v);
-				return (l2 < 0) ? 0 : sqrt(l2);
-			}
-
-			// 向量夹角 cosθ=a*b/(|a|*|b|)
-			inline static double angel(Vector v1, Vector v2)
-			{
-				return acos(dot(v1, v2) / length(v1) / length(v2));
-			}
-		};
-
+#define Vector Vector3d
 		std::vector<double> a(Fs.size());//夹角和Pi的比值
 		Vector vv = { 1, 1, 1 }; // 视向量
 		//9个大面的可见性
@@ -384,6 +337,7 @@ public:
 			else
 				Fs[i].visible = false;
 		}
+#undef Vector
 	}
 
 	//判断鼠标落点
@@ -391,55 +345,6 @@ private:
 	//判断点是否在指定面内
 	int onFace(CPoint p, Face f) /// 已验证
 	{
-		//2D向量
-		struct Vector
-		{
-			double x, y;
-
-			// 默认构造函数
-			Vector(double a = 0, double b = 0, double c = 0)
-			{
-				x = a;
-				y = b;
-			}
-
-			// p1指向p2的向量的构造函数
-			Vector(CPoint p1, CPoint p2)
-			{
-				x = p2.x - p1.x;
-				y = p2.y - p1.y;
-			}
-
-			// 向量乘法(向量积)
-			inline static double cross(Vector v1, Vector v2)
-			{
-				return  v1.x * v2.y - v2.x * v1.y;
-			}
-
-			// 向量乘法(数量积)
-			inline static double dot(Vector v1, Vector v2)
-			{
-				return v1.x * v2.x + v1.y * v2.y;
-			}
-
-			//和0比较 > = < 1 0 -1
-			inline static int dcmp(double x)
-			{
-				if (fabs(x) < 1e-8)
-					return 0;
-				else
-					return x < 0 ? -1 : 1;
-			}
-
-			//点在p线段上(包括端点)
-			inline static bool onSegment(CPoint p, CPoint a1, CPoint a2)
-			{ // pa1和pa2共线，且a1a2在p两端
-				return
-					dcmp(cross(Vector(p, a1), Vector(p, a2))) == 0 &&
-					dcmp(dot(Vector(p, a1), Vector(p, a2))) <= 0;
-			}
-		};
-
 		std::array<CPoint, 4> poly;
 		Matrix tmp(1);
 		for (int i = 0;i < poly.size();i++)//三维坐标系的点转换为二维坐标系的点
@@ -453,6 +358,7 @@ private:
 		int wn = 0;
 		for (int i = 0; i < poly.size(); i++)
 		{
+#define Vector Vector2d
 			if (Vector::onSegment(p, poly[i], poly[(i + 1) % poly.size()]))
 				return -1; //边界
 			int k = Vector::dcmp(Vector::cross(Vector(poly[i], poly[(i + 1) % poly.size()]), Vector(poly[i], p)));
@@ -466,6 +372,7 @@ private:
 		if (wn != 0)
 			return 1; //内部
 		return 0;     //外部
+#undef Vector
 	}
 
 public:
