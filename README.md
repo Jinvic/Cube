@@ -40,8 +40,11 @@
 ## 说明
 
 关于立方体的定义和操作整合在文件`Cube.hpp`内。
+
 关于计算几何的结构定义和算法实现整合在文件`ComputationGeometry.hpp`内。
+
 MFC功能主要在CCubeView类中实现。
+
 添加的一些成员函数和变量可在`CubeView.h`中查看，如下：
 
 ```C++
