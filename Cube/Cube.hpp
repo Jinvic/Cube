@@ -167,6 +167,12 @@ private:
 		f.P_idx[id] = P.size();
 		P.push_back(p);
 	}
+	//复制点
+	void copy_point(Face& f, int id)
+	{
+		P.push_back(P[f.P_idx[id]]);
+		f.P_idx[id] = P.size() - 1;
+	}
 
 	void trans_cube(void)
 	{
@@ -235,6 +241,23 @@ private:
 				add_point(p_mid[5].second, f, 2);
 				add_point(p_mid[4].second, f, 3);
 				Fs.push_back(f);
+			}
+		}
+		//拆分重合的棱边点
+		{
+			for (int i = 0;i < 3;i++)//前三面取右边两棱块
+			{
+				copy_point(Fs[i * 9 + 1], 0);
+				copy_point(Fs[i * 9 + 1], 1);
+				copy_point(Fs[i * 9 + 3], 1);
+				copy_point(Fs[i * 9 + 3], 2);
+			}
+			for (int i = 3;i < 6;i++)//后三面取左边两棱块
+			{
+				copy_point(Fs[i * 9 + 5], 2);
+				copy_point(Fs[i * 9 + 5], 3);
+				copy_point(Fs[i * 9 + 7], 3);
+				copy_point(Fs[i * 9 + 7], 0);
 			}
 		}
 	}
