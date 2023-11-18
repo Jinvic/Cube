@@ -149,7 +149,7 @@ private:
 				return i;
 		return -1;
 	}
-	//向f.P_idx[id]存点索引
+	//向f.P_idx[id]存点索引，不存重复点
 	void check_point(Point p, Face& f, int id)
 	{
 		int d = search_point(p);
@@ -160,6 +160,12 @@ private:
 		}
 		else
 			f.P_idx[id] = d;
+	}
+	//向f.P_idx[id]存点索引，存重复点
+	void add_point(Point p, Face& f, int id)
+	{
+		f.P_idx[id] = P.size();
+		P.push_back(p);
 	}
 
 	void trans_cube(void)
@@ -173,60 +179,61 @@ private:
 			p_mid[4] = middle2(p_mid[0].first, p_mid[2].second);
 			p_mid[5] = middle2(p_mid[0].second, p_mid[2].first);
 
+			//每个面存点，内部点存重复点，棱边点先重合存
 			Face f;
 			{
 				f.P_idx[0] = F[i].P_idx[0];
 				check_point(p_mid[0].first, f, 1);
-				check_point(p_mid[4].first, f, 2);
+				add_point(p_mid[4].first, f, 2);
 				check_point(p_mid[3].second, f, 3);
 				Fs.push_back(f);
 
 				check_point(p_mid[0].first, f, 0);
 				check_point(p_mid[0].second, f, 1);
-				check_point(p_mid[5].first, f, 2);
-				check_point(p_mid[4].first, f, 3);
+				add_point(p_mid[5].first, f, 2);
+				add_point(p_mid[4].first, f, 3);
 				Fs.push_back(f);
 
 				f.P_idx[1] = F[i].P_idx[1];
 				check_point(p_mid[0].second, f, 0);
 				check_point(p_mid[1].first, f, 2);
-				check_point(p_mid[5].first, f, 3);
+				add_point(p_mid[5].first, f, 3);
 				Fs.push_back(f);
 
-				check_point(p_mid[5].first, f, 0);
+				add_point(p_mid[5].first, f, 0);
 				check_point(p_mid[1].first, f, 1);
 				check_point(p_mid[1].second, f, 2);
-				check_point(p_mid[5].second, f, 3);
+				add_point(p_mid[5].second, f, 3);
 				Fs.push_back(f);
 
 				f.P_idx[2] = F[i].P_idx[2];
-				check_point(p_mid[5].second, f, 0);
+				add_point(p_mid[5].second, f, 0);
 				check_point(p_mid[1].second, f, 1);
 				check_point(p_mid[2].first, f, 3);
 				Fs.push_back(f);
 
-				check_point(p_mid[4].second, f, 0);
-				check_point(p_mid[5].second, f, 1);
+				add_point(p_mid[4].second, f, 0);
+				add_point(p_mid[5].second, f, 1);
 				check_point(p_mid[2].first, f, 2);
 				check_point(p_mid[2].second, f, 3);
 				Fs.push_back(f);
 
 				f.P_idx[3] = F[i].P_idx[3];
 				check_point(p_mid[3].first, f, 0);
-				check_point(p_mid[4].second, f, 1);
+				add_point(p_mid[4].second, f, 1);
 				check_point(p_mid[2].second, f, 2);
 				Fs.push_back(f);
 
 				check_point(p_mid[3].second, f, 0);
-				check_point(p_mid[4].first, f, 1);
-				check_point(p_mid[4].second, f, 2);
+				add_point(p_mid[4].first, f, 1);
+				add_point(p_mid[4].second, f, 2);
 				check_point(p_mid[3].first, f, 3);
 				Fs.push_back(f);
 
-				check_point(p_mid[4].first, f, 0);
-				check_point(p_mid[5].first, f, 1);
-				check_point(p_mid[5].second, f, 2);
-				check_point(p_mid[4].second, f, 3);
+				add_point(p_mid[4].first, f, 0);
+				add_point(p_mid[5].first, f, 1);
+				add_point(p_mid[5].second, f, 2);
+				add_point(p_mid[4].second, f, 3);
 				Fs.push_back(f);
 			}
 		}
@@ -336,7 +343,7 @@ public:
 			std::cout.setf(std::ios::fixed);
 			for (int i = 0;i < 6;i++)
 				std::cout << Color_rev[i] << "\t\t" << a[i] << std::endl;
-	}
+		}
 #endif
 
 		//54个小面的可见性
@@ -357,7 +364,7 @@ public:
 				Fs[i].visible = false;
 		}
 #undef Vector
-}
+	}
 
 	//判断鼠标落点
 private:
@@ -426,4 +433,4 @@ public:
 	{
 		return { (int)round(arr[0]),(int)round(arr[1]) };
 	}
-	};
+};
