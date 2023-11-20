@@ -213,7 +213,7 @@ void CCubeView::OnLButtonUp(UINT nFlags, CPoint point)
 	int dx = point.x - m_st_pos.x;
 	int dy = point.y - m_st_pos.y;
 	//根据移动距离计算旋转角度并旋转
-	cub.rotate(dx, dy);
+	cub.rotate(dx, dy, true);
 	DoubleBuffer();
 	CView::OnLButtonUp(nFlags, point);
 }

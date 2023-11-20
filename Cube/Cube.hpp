@@ -38,6 +38,9 @@ public:
 	{
 		std::array<int, 4> P_idx; // 四个顶点的索引，按逆时针顺序存点
 		bool visible = false;     // 可见性
+
+		std::array<int, 2>L_idx;//对应层
+		std::array<int, 2> rd;//层旋转方向，逆时针为正 {1，-1}
 	};
 	std::array<Face, 6> F;//六色面，依次为蓝红黄白橙绿
 	std::vector<Face> Fs;//36面，每9面为一色
@@ -49,9 +52,51 @@ public:
 
 	struct Layer
 	{
-		std::array<int, 8> P_idx;// 四个顶点的索引，存点顺序与立方体相同
-		Vector3d v;//法向量
+		std::vector<int> P_idx;// 四个顶点的索引，存点顺序与立方体相同
+		static const enum Axis { x, y, z };
+		Axis axis;
+		Cube* pCube;
+
+		// 绕坐标轴旋转
+		void rotate(double Beta) // Beta为旋转角度
+		{
+			Matrix T_x; // 绕x轴旋转变换矩阵
+			Matrix T_y; // 绕y轴旋转变换矩阵
+			Matrix T_z; // 绕z轴旋转变换矩阵
+			{
+				T_x.push_back({ 1, 0, 0, 0 });
+				T_x.push_back({ 0, cos(Beta), sin(Beta), 0 });
+				T_x.push_back({ 0, -sin(Beta), cos(Beta), 0 });
+				T_x.push_back({ 0, 0, 0, 1 });
+				T_y.push_back({ cos(Beta), 0, -sin(Beta), 0 });
+				T_y.push_back({ 0, 1, 0, 0 });
+				T_y.push_back({ sin(Beta), 0, cos(Beta), 0 });
+				T_y.push_back({ 0, 0, 0, 1 });
+				T_z.push_back({ cos(Beta), sin(Beta), 0, 0 });
+				T_z.push_back({ -sin(Beta), cos(Beta), 0, 0 });
+				T_z.push_back({ 0, 0, 1, 0 });
+				T_z.push_back({ 0, 0, 0, 1 });
+			}
+
+			Matrix LP(8);
+			for (auto idx : P_idx)
+				LP[idx] = pCube->P[idx];
+			switch (axis)
+			{
+			case x:
+				LP = LP * T_x;
+			case y:
+				LP = LP * T_y;
+			case z:
+				LP = LP * T_z;
+			default:
+				break;
+			}
+			for (auto idx : P_idx)
+				pCube->P[idx] = LP[idx];
+		}
 	}L[9];
+	int sum_dx, sum_dy;//用于还原立方体经历过的旋转
 
 	Cube(double D = 300, double a = 3, double b = 5) // D正方体边长，ab为比例尺
 	{
@@ -100,16 +145,15 @@ public:
 		//8点6面的立方体细化为156点54面的魔方
 		trans_cube();
 
-		//初始化各层顶点
-		//L[0].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[40].P_idx[3],F[38].P_idx[0],F[11].P_idx[2] };//蓝
-		//L[1].P_idx = { 0, 3, 7, 4,F[0].P_idx[1],F[51].P_idx[0],F[49].P_idx[1],F[47].P_idx[0] };//红
-		//L[2].P_idx = { 0, 4, 5, 1,F[0].P_idx[3],F[49].P_idx[3],F[47].P_idx[0],F[2].P_idx[2] };//黄
-		//L[3].P_idx = { 6, 7, 3, 2,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//白
-		//L[4].P_idx = { 6, 2, 1, 5,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//橙
-		//L[5].P_idx = { 6, 5, 4, 7,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//绿
-		//L[6].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//x轴为法向量
-		//L[7].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//y轴为法向量
-		//L[8].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//z轴为法向量
+		//指定各层法向量（旋转轴）
+		for (int i = 0;i < 9;i++)
+			L[i].pCube = this;
+		L[0].axis = L[5].axis = Layer::Axis::y;
+		L[1].axis = L[3].axis = Layer::Axis::z;
+		L[2].axis = L[4].axis = Layer::Axis::x;
+
+		//TODO:初始化各层顶点
+
 
 		//DEBUG:
 #ifdef debug
@@ -312,7 +356,7 @@ private:
 
 public:
 	//通过鼠标移动进行旋转
-	void rotate(int dx, int dy, int limit = 500)//limit为最大移动距离
+	void rotate(int dx, int dy, bool LB_up = false, int limit = 500)//limit为最大移动距离
 	{
 		double Theta_v = 0, Phi_v = 0; // 屏幕坐标系中绕y轴（水平移动）和x轴（上下移动）旋转的角度
 		// 将鼠标移动距离转换为对应角度
@@ -332,6 +376,60 @@ public:
 		// 还原对齐
 		rotate_x(-acos(-1) / 4);
 		rotate_y(acos(-1) / 4);
+
+		if (LB_up)
+			sum_dx += dx, sum_dy += dy;
+	}
+
+	//通过鼠标移动旋转层
+	void rotate_layer(int dx, int dy, int f_idx, bool LB_up = false, int limit = 500)//limit为最大移动距离
+	{
+		Face f = Fs[f_idx];
+		//将面的三维坐标转换为二维坐标
+		std::array<CPoint, 4> FP;
+		Matrix tmp(1);
+		for (int i = 0;i < 4;i++)//三维坐标系的点转换为二维坐标系的点
+		{
+			tmp[0] = P[f.P_idx[i]];
+			tmp = tmp * T_ws;
+			FP[i] = trans_point(tmp[0]);
+		}
+
+		Vector2d v0(FP[0], FP[3]), v1(FP[0], FP[1]);//两个方向上的向量
+		Vector2d vm(dx, dy);//鼠标移动的向量
+		double len = Vector2d::length(vm);
+		double a0 = Vector2d::angel(v0, vm), a1 = Vector2d::angel(v1, vm);//向量夹角
+		const double PI = acos(-1);
+		double Theta;//旋转角度
+		int temp;
+		if (min(a0, PI - a0) <= min(a1, PI - a1))//沿哪个方向旋转
+		{
+			len = len * cos(a0);
+			Theta = min(abs(dx), limit) / 500 * PI / 2;//最大旋转角度PI/2
+			temp = 0;
+		}
+		else
+		{
+			len = len * cos(a1);
+			Theta = min(abs(dx), limit) / 500 * PI / 2;//最大旋转角度PI/2
+			temp = 1;
+		}
+		//松开鼠标时特判
+		if (LB_up)
+		{
+			if (abs(Theta) < PI / 4)//角度不够，不旋转
+				return;
+			else//旋转最大角度
+				Theta = PI / 2;
+		}
+		if (Theta * len < 0)Theta = -Theta;//正负保持同号
+
+		// 将立方体还原到初始旋转状态来对齐层的原位置
+		rotate(-sum_dx, -sum_dy);
+		//旋转对应层
+		L[f.L_idx[temp]].rotate(Theta * f.rd[temp]);
+		// 还原对齐
+		rotate(sum_dx, sum_dy);
 	}
 
 	// 消隐算法

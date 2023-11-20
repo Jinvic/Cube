@@ -7,7 +7,7 @@ struct Vector2d
 	double x, y;
 
 	// 默认构造函数
-	Vector(double a = 0, double b = 0, double c = 0)
+	Vector(double a = 0, double b = 0)
 	{
 		x = a;
 		y = b;
@@ -47,6 +47,19 @@ struct Vector2d
 		return
 			dcmp(cross(Vector(p, a1), Vector(p, a2))) == 0 &&
 			dcmp(dot(Vector(p, a1), Vector(p, a2))) <= 0;
+	}
+
+	// 向量模
+	inline static double length(Vector v)
+	{
+		double l2 = dot(v, v);
+		return (l2 < 0) ? 0 : sqrt(l2);
+	}
+
+	// 向量夹角 cosθ=a*b/(|a|*|b|)
+	inline static double angel(Vector v1, Vector v2)
+	{
+		return acos(dot(v1, v2) / length(v1) / length(v2));
 	}
 #undef Vector
 };
