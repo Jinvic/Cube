@@ -226,30 +226,24 @@ private:
 		std::array<int, 3>fsid_arr;
 		fsid_arr = { 0,6,7 };
 		for (int i = 0;i < 3;i++)
-			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
+			Fs[F_idx * 9 + fsid_arr[i]].set_layer(id, lid_arr[id * 3 + 0], rd[id]);
 		fsid_arr = { 1,5,8 };
 		for (int i = 0;i < 3;i++)
-			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
+			Fs[F_idx * 9 + fsid_arr[i]].set_layer(id, lid_arr[id * 3 + 1], rd[id]);
 		fsid_arr = { 2,3,4 };
 		for (int i = 0;i < 3;i++)
-			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
+			Fs[F_idx * 9 + fsid_arr[i]].set_layer(id, lid_arr[id * 3 + 2], rd[id]);
 
 		id = 1;
 		fsid_arr = { 0,1,2 };
 		for (int i = 0;i < 3;i++)
-			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
+			Fs[F_idx * 9 + fsid_arr[i]].set_layer(id, lid_arr[id * 3 + 0], rd[id]);
 		fsid_arr = { 3,7,8 };
 		for (int i = 0;i < 3;i++)
-			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
+			Fs[F_idx * 9 + fsid_arr[i]].set_layer(id, lid_arr[id * 3 + 1], rd[id]);
 		fsid_arr = { 4,5,6 };
 		for (int i = 0;i < 3;i++)
-			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
+			Fs[F_idx * 9 + fsid_arr[i]].set_layer(id, lid_arr[id * 3 + 2], rd[id]);
 	}
 
 	//8点6面的立方体细化为156点54面的魔方
@@ -647,7 +641,11 @@ public:
 			if (res == OutFace)
 				std::cout << "Out of all face." << std::endl;
 			else
+			{
 				std::cout << "on face:Fs[" << res << "]\tcolor:" << Color_rev[res / 9] << std::endl;
+				std::cout << "L_idx:\t" << Fs[res].L_idx[0] << ' ' << Fs[res].L_idx[1] << std::endl;
+				std::cout << "rd:\t" << Fs[res].rd[0] << ' ' << Fs[res].rd[1] << std::endl;
+			}
 		}
 #endif
 
