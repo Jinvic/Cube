@@ -56,6 +56,7 @@ public:
 	const std::string Color_rev[6] = { "blue", "red", "yellow", "white", "orange", "green" };//DEBUG用
 
 	static const int OutFace = -1;//判断鼠标落点用，该常量表示未落在面上
+	bool onface = false;
 
 	struct Layer
 	{
@@ -107,10 +108,13 @@ public:
 			{
 			case x:
 				LP = LP * T_x;
+				break;
 			case y:
 				LP = LP * T_y;
+				break;
 			case z:
 				LP = LP * T_z;
+				break;
 			default:
 				break;
 			}
@@ -118,7 +122,7 @@ public:
 				pCube->P[idx] = LP[idx];
 		}
 	}L[9];//前六层为蓝红黄白橙绿,后三层xyz轴为法向量
-	int sum_dx, sum_dy;//用于还原立方体经历过的旋转
+	int sum_dx = 0, sum_dy = 0;//用于还原立方体经历过的旋转
 
 	//构造函数，大部分初始化在这里完成
 	Cube(double D = 300, double a = 3, double b = 5) // D正方体边长，ab为比例尺
@@ -171,9 +175,9 @@ public:
 		//指定各层法向量（旋转轴）
 		for (int i = 0;i < 9;i++)
 			L[i].pCube = this;
-		L[0].axis = L[5].axis = Layer::Axis::y;
-		L[1].axis = L[3].axis = Layer::Axis::z;
-		L[2].axis = L[4].axis = Layer::Axis::x;
+		L[0].axis = L[5].axis = L[7].axis = Layer::Axis::y;
+		L[1].axis = L[4].axis = L[8].axis = Layer::Axis::z;
+		L[2].axis = L[3].axis = L[6].axis = Layer::Axis::x;
 
 		//TODO:初始化各层顶点
 		for (int i = 0;i < 6;i++)
@@ -188,11 +192,11 @@ public:
 		L[2].add_face(fs_idx_arr);//黄
 		fs_idx_arr = { 4,5,6,11,12,13,36,37,38,45,51,52 };
 		L[3].add_face(fs_idx_arr);//白
-		fs_idx_arr = { 2,3,4,22,23,24,31,32,33,38,39,40 };
+		fs_idx_arr = { 2,3,4,22,23,24,27,33,34,45,46,47 };
 		L[4].add_face(fs_idx_arr);//橙
-		fs_idx_arr = { 9,10,11,18,24,25,27,33,34,45,46,47 };
+		fs_idx_arr = { 13,14,15,20,21,22,27,28,29,36,42,43 };
 		L[5].add_face(fs_idx_arr);//绿
-		fs_idx_arr = { 3,7,8,20,21,22,27,28,29,36,42,43 };
+		fs_idx_arr = { 3,7,8,10,14,17,39,43,44,46,50,53 };
 		L[6].add_face(fs_idx_arr);//绕x轴
 		fs_idx_arr = { 12,16,17,19,23,26,30,34,35,37,41,44 };
 		L[7].add_face(fs_idx_arr);//绕y轴
@@ -293,13 +297,8 @@ private:
 		f.P_idx[id] = P.size();
 		P.push_back(p);
 	}
-	//复制点
-	void copy_point(Face& f, int id)
-	{
-		P.push_back(P[f.P_idx[id]]);
-		f.P_idx[id] = P.size() - 1;
-	}
 
+	//8点6面的立方体细化为156点54面的魔方
 	void trans_cube(void)
 	{
 		//4点1面细化为36点9面
@@ -371,20 +370,57 @@ private:
 		}
 		//拆分重合的棱边点
 		{
-			for (int i = 0;i < 3;i++)//前三面取右边两棱块
-			{
-				copy_point(Fs[i * 9 + 1], 0);
-				copy_point(Fs[i * 9 + 1], 1);
-				copy_point(Fs[i * 9 + 3], 1);
-				copy_point(Fs[i * 9 + 3], 2);
-			}
-			for (int i = 3;i < 6;i++)//后三面取左边两棱块
-			{
-				copy_point(Fs[i * 9 + 5], 2);
-				copy_point(Fs[i * 9 + 5], 3);
-				copy_point(Fs[i * 9 + 7], 3);
-				copy_point(Fs[i * 9 + 7], 0);
-			}
+			//顶层
+			P.push_back(P[Fs[1].P_idx[0]]);
+			Fs[1].P_idx[0] = Fs[25].P_idx[0] = P.size() - 1;
+			P.push_back(P[Fs[1].P_idx[1]]);
+			Fs[1].P_idx[1] = Fs[25].P_idx[3] = P.size() - 1;
+			P.push_back(P[Fs[3].P_idx[1]]);
+			Fs[3].P_idx[1] = Fs[39].P_idx[2] = P.size() - 1;
+			P.push_back(P[Fs[3].P_idx[2]]);
+			Fs[3].P_idx[2] = Fs[39].P_idx[1] = P.size() - 1;
+			P.push_back(P[Fs[5].P_idx[2]]);
+			Fs[5].P_idx[2] = Fs[32].P_idx[3] = P.size() - 1;
+			P.push_back(P[Fs[5].P_idx[3]]);
+			Fs[5].P_idx[3] = Fs[32].P_idx[2] = P.size() - 1;
+			P.push_back(P[Fs[7].P_idx[3]]);
+			Fs[7].P_idx[3] = Fs[10].P_idx[1] = P.size() - 1;
+			P.push_back(P[Fs[7].P_idx[0]]);
+			Fs[7].P_idx[0] = Fs[10].P_idx[0] = P.size() - 1;
+			//底层
+			P.push_back(P[Fs[46].P_idx[0]]);
+			Fs[46].P_idx[0] = Fs[43].P_idx[0] = P.size() - 1;
+			P.push_back(P[Fs[46].P_idx[1]]);
+			Fs[46].P_idx[1] = Fs[43].P_idx[3] = P.size() - 1;
+			P.push_back(P[Fs[48].P_idx[1]]);
+			Fs[48].P_idx[1] = Fs[21].P_idx[2] = P.size() - 1;
+			P.push_back(P[Fs[48].P_idx[2]]);
+			Fs[48].P_idx[2] = Fs[21].P_idx[1] = P.size() - 1;
+			P.push_back(P[Fs[50].P_idx[2]]);
+			Fs[50].P_idx[2] = Fs[14].P_idx[3] = P.size() - 1;
+			P.push_back(P[Fs[50].P_idx[3]]);
+			Fs[50].P_idx[3] = Fs[14].P_idx[2] = P.size() - 1;
+			P.push_back(P[Fs[52].P_idx[3]]);
+			Fs[52].P_idx[3] = Fs[28].P_idx[1] = P.size() - 1;
+			P.push_back(P[Fs[52].P_idx[0]]);
+			Fs[52].P_idx[0] = Fs[28].P_idx[0] = P.size() - 1;
+			//中层
+			P.push_back(P[Fs[16].P_idx[0]]);
+			Fs[16].P_idx[0] = Fs[19].P_idx[0] = P.size() - 1;
+			P.push_back(P[Fs[16].P_idx[3]]);
+			Fs[16].P_idx[3] = Fs[19].P_idx[1] = P.size() - 1;
+			P.push_back(P[Fs[23].P_idx[2]]);
+			Fs[23].P_idx[2] = Fs[41].P_idx[3] = P.size() - 1;
+			P.push_back(P[Fs[23].P_idx[3]]);
+			Fs[23].P_idx[3] = Fs[41].P_idx[2] = P.size() - 1;
+			P.push_back(P[Fs[34].P_idx[0]]);
+			Fs[34].P_idx[0] = Fs[37].P_idx[0] = P.size() - 1;
+			P.push_back(P[Fs[34].P_idx[3]]);
+			Fs[34].P_idx[3] = Fs[37].P_idx[1] = P.size() - 1;
+			P.push_back(P[Fs[30].P_idx[1]]);
+			Fs[30].P_idx[1] = Fs[12].P_idx[2] = P.size() - 1;
+			P.push_back(P[Fs[30].P_idx[2]]);
+			Fs[30].P_idx[2] = Fs[12].P_idx[1] = P.size() - 1;
 		}
 	}
 	//找线段的两个中点
@@ -459,8 +495,14 @@ public:
 		rotate_x(-acos(-1) / 4);
 		rotate_y(acos(-1) / 4);
 
-		if (LB_up)
-			sum_dx += dx, sum_dy += dy;
+		if (LB_up && !onface)
+		{
+			sum_dx = (sum_dx + dx * vx) % (2 * limit), sum_dy = (sum_dy + dy * vy) % (2 * limit);
+#ifdef debug
+			if (debug == layer_rotate_test)
+				std::cout << "sum of dx:\t" << sum_dx << "\tsum of dy\t" << sum_dy << std::endl;
+#endif
+		}
 	}
 
 	//通过鼠标移动旋转层
@@ -482,6 +524,7 @@ public:
 		Vector2d v0(FP[0], FP[3]), v1(FP[0], FP[1]);//两个方向上的向量
 		Vector2d vm(dx, dy);//鼠标移动的向量
 		double len = Vector2d::length(vm);
+		if (abs(len) <= 1e-6)return;
 		double a0 = Vector2d::angel(v0, vm), a1 = Vector2d::angel(v1, vm);//向量夹角
 		const double PI = acos(-1);
 		double Theta;//旋转角度
@@ -624,13 +667,10 @@ public:
 	int onWhichFace(CPoint mp)//返回面的索引。若返回-1则不在面上
 	{
 		int res = OutFace;//-1
-		for (int i = 0;i < F.size();i++)//先判断大面
-		{
-			if (F[i].visible == true && onFace(mp, F[i]))
-				for (int j = 0;j < 9;j++)//再判断大面内的小面
-					if (onFace(mp, Fs[i * 9 + j]))
-						res = i * 9 + j;
-		}
+		for (int i = 0;i < Fs.size();i++)//先判断大面
+			if (Fs[i].visible == true && onFace(mp, Fs[i]))
+				res = i;
+		onface = (res == OutFace) ? false : true;
 
 		//DEBUG:
 #ifdef debug
@@ -643,6 +683,10 @@ public:
 			else
 			{
 				std::cout << "on face:Fs[" << res << "]\tcolor:" << Color_rev[res / 9] << std::endl;
+				std::cout << "points:" << std::endl;
+				for (int i = 0;i < Fs[res].P_idx.size();i++)
+					std::cout << Fs[res].P_idx[i] << '\t';
+				std::cout << std::endl;
 				std::cout << "L_idx:\t" << Fs[res].L_idx[0] << ' ' << Fs[res].L_idx[1] << std::endl;
 				std::cout << "rd:\t" << Fs[res].rd[0] << ' ' << Fs[res].rd[1] << std::endl;
 			}
