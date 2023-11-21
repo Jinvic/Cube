@@ -7,7 +7,7 @@ struct Vector2d
 	double x, y;
 
 	// 默认构造函数
-	Vector(double a = 0, double b = 0, double c = 0)
+	Vector(double a = 0, double b = 0)
 	{
 		x = a;
 		y = b;

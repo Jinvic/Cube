@@ -2,7 +2,7 @@
 
 const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace };
 #define debug mouse_LBdown_onWhichFace
-//#undef debug
+#undef debug
 #ifdef debug
 #pragma comment(linker, "/subsystem:console /entry:wWinMainCRTStartup") 
 #endif // debug
@@ -47,11 +47,6 @@ public:
 
 	static const int OutFace = -1;//判断鼠标落点用，该常量表示未落在面上
 
-	struct Layer
-	{
-		std::array<int, 8> P_idx;// 四个顶点的索引，存点顺序与立方体相同
-		Vector3d v;//法向量
-	}L[9];
 
 	Cube(double D = 300, double a = 3, double b = 5) // D正方体边长，ab为比例尺
 	{
@@ -99,17 +94,6 @@ public:
 
 		//8点6面的立方体细化为156点54面的魔方
 		trans_cube();
-
-		//初始化各层顶点
-		//L[0].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[40].P_idx[3],F[38].P_idx[0],F[11].P_idx[2] };//蓝
-		//L[1].P_idx = { 0, 3, 7, 4,F[0].P_idx[1],F[51].P_idx[0],F[49].P_idx[1],F[47].P_idx[0] };//红
-		//L[2].P_idx = { 0, 4, 5, 1,F[0].P_idx[3],F[49].P_idx[3],F[47].P_idx[0],F[2].P_idx[2] };//黄
-		//L[3].P_idx = { 6, 7, 3, 2,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//白
-		//L[4].P_idx = { 6, 2, 1, 5,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//橙
-		//L[5].P_idx = { 6, 5, 4, 7,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//绿
-		//L[6].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//x轴为法向量
-		//L[7].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//y轴为法向量
-		//L[8].P_idx = { 0, 1, 2, 3,F[9].P_idx[3],F[47].P_idx[0],F[49].P_idx[3],F[11].P_idx[2] };//z轴为法向量
 
 		//DEBUG:
 #ifdef debug

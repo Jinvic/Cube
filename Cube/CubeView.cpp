@@ -202,7 +202,7 @@ void CCubeView::OnLButtonDown(UINT nFlags, CPoint point)
 	point.x -= rect.Width() / 2;
 	point.y = rect.Height() / 2 - point.y;
 	Fs_idx = cub.onWhichFace(point);
-	CView::OnLButtonUp(nFlags, point);
+	CView::OnLButtonDown(nFlags, point);
 }
 
 void CCubeView::OnLButtonUp(UINT nFlags, CPoint point)
