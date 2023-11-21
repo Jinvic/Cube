@@ -9,6 +9,7 @@ const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace };
 
 #include <vector>
 #include <array>
+#include <set>
 #include <iostream>
 #include "ComputationGeometry.hpp"
 
@@ -41,6 +42,12 @@ public:
 
 		std::array<int, 2>L_idx;//对应层
 		std::array<int, 2> rd;//层旋转方向，逆时针为正 {1，-1}
+		//Fs数组用，设置每个小面的对应层和旋转方向
+		void set_layer(int id, int lid, int rdid)
+		{
+			L_idx[id] = lid;
+			rd[id] = rdid;
+		}
 	};
 	std::array<Face, 6> F;//六色面，依次为蓝红黄白橙绿
 	std::vector<Face> Fs;//36面，每9面为一色
@@ -52,10 +59,25 @@ public:
 
 	struct Layer
 	{
-		std::vector<int> P_idx;// 四个顶点的索引，存点顺序与立方体相同
+	public:
+		std::set<int> P_idx;// 四个顶点的索引，存点顺序与立方体相同
 		static const enum Axis { x, y, z };
 		Axis axis;
 		Cube* pCube;
+
+	public:
+		//将面的所有点加入层
+		void add_face(int fs_idx)
+		{
+			for (auto pid : pCube->Fs[fs_idx].P_idx)
+				P_idx.insert(pid);
+		}
+		void add_face(std::array<int, 12> fs_idx_arr)
+		{
+			for (auto fs_idx : fs_idx_arr)
+				for (auto pid : pCube->Fs[fs_idx].P_idx)
+					P_idx.insert(pid);
+		}
 
 		// 绕坐标轴旋转
 		void rotate(double Beta) // Beta为旋转角度
@@ -95,9 +117,10 @@ public:
 			for (auto idx : P_idx)
 				pCube->P[idx] = LP[idx];
 		}
-	}L[9];
+	}L[9];//前六层为蓝红黄白橙绿,后三层xyz轴为法向量
 	int sum_dx, sum_dy;//用于还原立方体经历过的旋转
 
+	//构造函数，大部分初始化在这里完成
 	Cube(double D = 300, double a = 3, double b = 5) // D正方体边长，ab为比例尺
 	{
 		struct Point
@@ -153,6 +176,36 @@ public:
 		L[2].axis = L[4].axis = Layer::Axis::x;
 
 		//TODO:初始化各层顶点
+		for (int i = 0;i < 6;i++)
+			for (int j = 0;j < 9;j++)
+				L[i].add_face(i * 9 + j);
+		std::array<int, 12> fs_idx_arr;
+		fs_idx_arr = { 9,10,11,18,24,25,31,32,33,38,39,40 };
+		L[0].add_face(fs_idx_arr);//蓝
+		fs_idx_arr = { 0,6,7,18,19,20,29,30,31,49,50,51 };
+		L[1].add_face(fs_idx_arr);//红
+		fs_idx_arr = { 0,1,2,9,15,16,40,41,42,47,48,49 };
+		L[2].add_face(fs_idx_arr);//黄
+		fs_idx_arr = { 4,5,6,11,12,13,36,37,38,45,51,52 };
+		L[3].add_face(fs_idx_arr);//白
+		fs_idx_arr = { 2,3,4,22,23,24,31,32,33,38,39,40 };
+		L[4].add_face(fs_idx_arr);//橙
+		fs_idx_arr = { 9,10,11,18,24,25,27,33,34,45,46,47 };
+		L[5].add_face(fs_idx_arr);//绿
+		fs_idx_arr = { 3,7,8,20,21,22,27,28,29,36,42,43 };
+		L[6].add_face(fs_idx_arr);//绕x轴
+		fs_idx_arr = { 12,16,17,19,23,26,30,34,35,37,41,44 };
+		L[7].add_face(fs_idx_arr);//绕y轴
+		fs_idx_arr = { 1,5,8,21,25,26,28,32,35,48,52,53 };
+		L[8].add_face(fs_idx_arr);//绕z轴
+
+		//初始化各面对应层和旋转方向
+		set_layers(0, { 1,8,4,2,6,3 }, { 1,-1 });
+		set_layers(1, { 2,6,3,0,7,5 }, { 1,-1 });
+		set_layers(2, { 0,7,5,1,8,4 }, { 1,-1 });
+		set_layers(3, { 4,8,1,5,7,0 }, { -1,1 });
+		set_layers(4, { 5,7,0,3,6,2 }, { -1,1 });
+		set_layers(5, { 3,6,2,4,8,1 }, { -1,1 });
 
 
 		//DEBUG:
@@ -160,10 +213,45 @@ public:
 		AllocConsole();
 		std::cout << "P.size():\t" << P.size() << std::endl;
 		std::cout << "Fs.size()\t" << Fs.size() << std::endl;
+		std::cout << "F.size()\t" << Fs.size() << std::endl;
+		std::cout << "L.size()\t" << Fs.size() << std::endl;
 #endif
 	}
 
 private:
+	//F数组用，设置每个大面的各个小面
+	void set_layers(int F_idx, std::array<int, 6>lid_arr, std::array<int, 2> rd)
+	{
+		int id = 0;
+		std::array<int, 3>fsid_arr;
+		fsid_arr = { 0,6,7 };
+		for (int i = 0;i < 3;i++)
+			for (auto fsid : fsid_arr)
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+		fsid_arr = { 1,5,8 };
+		for (int i = 0;i < 3;i++)
+			for (auto fsid : fsid_arr)
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+		fsid_arr = { 2,3,4 };
+		for (int i = 0;i < 3;i++)
+			for (auto fsid : fsid_arr)
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+
+		id = 1;
+		fsid_arr = { 0,1,2 };
+		for (int i = 0;i < 3;i++)
+			for (auto fsid : fsid_arr)
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+		fsid_arr = { 3,7,8 };
+		for (int i = 0;i < 3;i++)
+			for (auto fsid : fsid_arr)
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+		fsid_arr = { 4,5,6 };
+		for (int i = 0;i < 3;i++)
+			for (auto fsid : fsid_arr)
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+	}
+
 	//8点6面的立方体细化为156点54面的魔方
 #define Point std::array<double, 4>
 	//四则运算
