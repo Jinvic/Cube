@@ -202,7 +202,7 @@ void CCubeView::OnLButtonDown(UINT nFlags, CPoint point)
 	point.x -= rect.Width() / 2;
 	point.y = rect.Height() / 2 - point.y;
 	Fs_idx = cub.onWhichFace(point);
-	CView::OnLButtonUp(nFlags, point);
+	CView::OnLButtonDown(nFlags, point);
 }
 
 void CCubeView::OnLButtonUp(UINT nFlags, CPoint point)
@@ -213,7 +213,10 @@ void CCubeView::OnLButtonUp(UINT nFlags, CPoint point)
 	int dx = point.x - m_st_pos.x;
 	int dy = point.y - m_st_pos.y;
 	//根据移动距离计算旋转角度并旋转
-	cub.rotate(dx, dy, true);
+	if (Fs_idx == Cube::OutFace)
+		cub.rotate(dx, dy, true);
+	else
+		cub.rotate_layer(dx, dy, Fs_idx, true);
 	DoubleBuffer();
 	CView::OnLButtonUp(nFlags, point);
 }
@@ -228,7 +231,11 @@ void CCubeView::OnMouseMove(UINT nFlags, CPoint point)
 		int dx = point.x - m_st_pos.x;
 		int dy = point.y - m_st_pos.y;
 		//根据移动距离计算旋转角度并旋转
-		cub.rotate(dx, dy);
+		//cub.rotate(dx, dy);
+		if (Fs_idx == Cube::OutFace)
+			cub.rotate(dx, dy);
+		else
+			cub.rotate_layer(dx, dy, Fs_idx);
 		DoubleBuffer();
 		cub.P = CP_st;
 		//因为每次都是根据初始状态计算旋转角度来实时更新状态

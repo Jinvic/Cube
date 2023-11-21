@@ -80,6 +80,7 @@ const enum debug_flags {...};
 
 - `real_time_visibility`：实时显示鼠标移动时各色面的可见度。指标为面的外法向量与视向量的夹角θ与π的比值。当值小于0.5时，夹角为锐角，该面可见，且值越小可见面积越大。当值大于0.5时，夹角为钝角，该面不可见。
 - `mouse_LBdown_onWhichFace`：按下鼠标左键时鼠标的位置以及落在哪个小面上，使用计算几何中的凸包相关算法判断。
+- `layer_rotate_test`: 测试旋转层时输出旋转的层和方向。
 
 ## TODO List
 

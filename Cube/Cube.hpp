@@ -1,7 +1,7 @@
 #pragma once
 
-const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace };
-#define debug mouse_LBdown_onWhichFace
+const enum debug_flags { real_time_visibility, mouse_LBdown_onWhichFace, layer_rotate_test };
+#define debug layer_rotate_test
 //#undef debug
 #ifdef debug
 #pragma comment(linker, "/subsystem:console /entry:wWinMainCRTStartup") 
@@ -100,7 +100,7 @@ public:
 				T_z.push_back({ 0, 0, 0, 1 });
 			}
 
-			Matrix LP(8);
+			Matrix LP(pCube->P.size());
 			for (auto idx : P_idx)
 				LP[idx] = pCube->P[idx];
 			switch (axis)
@@ -213,8 +213,8 @@ public:
 		AllocConsole();
 		std::cout << "P.size():\t" << P.size() << std::endl;
 		std::cout << "Fs.size()\t" << Fs.size() << std::endl;
-		std::cout << "F.size()\t" << Fs.size() << std::endl;
-		std::cout << "L.size()\t" << Fs.size() << std::endl;
+		std::cout << "F.size()\t" << F.size() << std::endl;
+		std::cout << "L.size()\t" << 9 << std::endl;
 #endif
 	}
 
@@ -227,29 +227,29 @@ private:
 		fsid_arr = { 0,6,7 };
 		for (int i = 0;i < 3;i++)
 			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
 		fsid_arr = { 1,5,8 };
 		for (int i = 0;i < 3;i++)
 			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
 		fsid_arr = { 2,3,4 };
 		for (int i = 0;i < 3;i++)
 			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
 
 		id = 1;
 		fsid_arr = { 0,1,2 };
 		for (int i = 0;i < 3;i++)
 			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
 		fsid_arr = { 3,7,8 };
 		for (int i = 0;i < 3;i++)
 			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
 		fsid_arr = { 4,5,6 };
 		for (int i = 0;i < 3;i++)
 			for (auto fsid : fsid_arr)
-				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[i]);
+				Fs[fsid].set_layer(id, lid_arr[id * 3 + i], rd[id]);
 	}
 
 	//8点6面的立方体细化为156点54面的魔方
@@ -470,17 +470,19 @@ public:
 	}
 
 	//通过鼠标移动旋转层
-	void rotate_layer(int dx, int dy, int f_idx, bool LB_up = false, int limit = 500)//limit为最大移动距离
+	void rotate_layer(int dx, int dy, int f_idx, bool LB_up = false, int limit = 400)//limit为最大移动距离
 	{
-		Face f = Fs[f_idx];
+		//鼠标移动坐标系不同，需要转换
+		dy = -dy;
 		//将面的三维坐标转换为二维坐标
+		Face f = Fs[f_idx];
 		std::array<CPoint, 4> FP;
-		Matrix tmp(1);
+		Matrix mtmp(1);
 		for (int i = 0;i < 4;i++)//三维坐标系的点转换为二维坐标系的点
 		{
-			tmp[0] = P[f.P_idx[i]];
-			tmp = tmp * T_ws;
-			FP[i] = trans_point(tmp[0]);
+			mtmp[0] = P[f.P_idx[i]];
+			mtmp = mtmp * T_ws;
+			FP[i] = trans_point(mtmp[0]);
 		}
 
 		Vector2d v0(FP[0], FP[3]), v1(FP[0], FP[1]);//两个方向上的向量
@@ -489,18 +491,18 @@ public:
 		double a0 = Vector2d::angel(v0, vm), a1 = Vector2d::angel(v1, vm);//向量夹角
 		const double PI = acos(-1);
 		double Theta;//旋转角度
-		int temp;
+		int id;
 		if (min(a0, PI - a0) <= min(a1, PI - a1))//沿哪个方向旋转
 		{
 			len = len * cos(a0);
-			Theta = min(abs(dx), limit) / 500 * PI / 2;//最大旋转角度PI/2
-			temp = 0;
+			Theta = min(abs(len), limit) / limit * PI / 2;//最大旋转角度PI/2
+			id = 0;
 		}
 		else
 		{
 			len = len * cos(a1);
-			Theta = min(abs(dx), limit) / 500 * PI / 2;//最大旋转角度PI/2
-			temp = 1;
+			Theta = min(abs(len), limit) / limit * PI / 2;//最大旋转角度PI/2
+			id = 1;
 		}
 		//松开鼠标时特判
 		if (LB_up)
@@ -515,9 +517,22 @@ public:
 		// 将立方体还原到初始旋转状态来对齐层的原位置
 		rotate(-sum_dx, -sum_dy);
 		//旋转对应层
-		L[f.L_idx[temp]].rotate(Theta * f.rd[temp]);
+		L[f.L_idx[id]].rotate(Theta * f.rd[id]);
 		// 还原对齐
 		rotate(sum_dx, sum_dy);
+
+#ifdef debug
+		if (debug == layer_rotate_test)
+		{
+			system("cls");
+			std::cout << "length of vector:\t" << len << std::endl;
+			std::cout << "angle of rotate:\t" << Theta << std::endl;
+			if (Theta * f.rd[id] >= 0)
+				std::cout << "direction of rotate:\t" << "foward(anticlockwise)" << std::endl;
+			else
+				std::cout << "direction of rotate:\t" << "reverse(clockwise)" << std::endl;
+		}
+#endif // !debug
 	}
 
 	// 消隐算法
@@ -626,12 +641,14 @@ public:
 		//DEBUG:
 #ifdef debug
 		if (debug == mouse_LBdown_onWhichFace)
+		{
 			system("cls");
-		std::cout << "mouse_pos:\t" << mp.x << '\t' << mp.y << std::endl;
-		if (res == OutFace)
-			std::cout << "Out of all face." << std::endl;
-		else
-			std::cout << "on face:Fs[" << res << "]\tcolor:" << Color_rev[res / 9] << std::endl;
+			std::cout << "mouse_pos:\t" << mp.x << '\t' << mp.y << std::endl;
+			if (res == OutFace)
+				std::cout << "Out of all face." << std::endl;
+			else
+				std::cout << "on face:Fs[" << res << "]\tcolor:" << Color_rev[res / 9] << std::endl;
+		}
 #endif
 
 		return res;
